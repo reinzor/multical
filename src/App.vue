@@ -6,6 +6,21 @@
   <router-view/>
 </template>
 
+<script>
+import { defineComponent, onMounted } from 'vue';
+import serial from '@/services/serial';
+
+export default defineComponent({
+  setup() {
+    onMounted(() => {
+      serial.requestSerialPort().then((port) => {
+        serial.connect(port);
+      });
+    });
+  },
+});
+</script>
+
 <style>
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
