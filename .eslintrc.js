@@ -14,5 +14,18 @@ module.exports = {
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'max-len': ['error', {
+      code: 120,
+      ignoreUrls: true,
+      ignorePattern: '^import .*',
+    }],
+    'object-curly-newline': 'off',
+    'newline-per-chained-call': 'off',
+    'no-underscore-dangle': 'off',
+    'default-case': 'off',
+    'no-shadow': 'off',
+    '@typescript-eslint/no-shadow': 'error',
+    'no-unused-expressions': 'off',
+    '@typescript-eslint/no-unused-expressions': ['error'],
   },
 };
