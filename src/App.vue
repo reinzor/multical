@@ -12,10 +12,17 @@ import serial from '@/services/serial';
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      serial.requestSerialPort().then((port) => {
-        serial.connect(port);
-      });
+    onMounted(async () => {
+      try {
+        const port = await serial.requestSerialPort();
+        try {
+          await serial.consumeMeasurements(port);
+        } catch (e) {
+          console.error(`consume measurements interrupted: ${e}`);
+        }
+      } catch (e) {
+        console.error(`failed to request serial port: ${e}`);
+      }
     });
   },
 });
