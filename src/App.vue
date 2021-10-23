@@ -2,7 +2,10 @@
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
+    {{ connectionStatus }}
   </div>
+  <button @click="connect">Connect</button>
+  <button @click="disconnect">Disconnect</button>
   <router-view/>
 </template>
 
@@ -12,18 +15,26 @@ import serial from '@/services/serial';
 
 export default defineComponent({
   setup() {
-    onMounted(async () => {
+    const connect = async () => {
       try {
         const port = await serial.requestSerialPort();
         try {
-          await serial.consumeMeasurements(port);
+          await serial.connect(port);
         } catch (e) {
           console.error(`consume measurements interrupted: ${e}`);
         }
       } catch (e) {
         console.error(`failed to request serial port: ${e}`);
       }
-    });
+    };
+
+    const disconnect = () => serial.disconnect();
+
+    return {
+      connect,
+      disconnect,
+      connectionStatus: serial.connectionStatus,
+    };
   },
 });
 </script>

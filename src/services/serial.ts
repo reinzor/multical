@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { bufferAppend, getSubBuffer } from '../util/buffer';
 import hexStringFromByteArray from '../util/hex';
+import nullFn from '../util/null-fn';
 
 interface Measurement {
   bla: number;
@@ -14,31 +15,31 @@ enum ConnectionStatus {
 
 const asyncSetTimeout = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+const getSerial = (): any => {
+  const nav = navigator as any;
+  if (!('serial' in nav)) {
+    throw new Error('Web serial not supported');
+  }
+  return nav.serial;
+};
+
 class Serial {
   _commands = ['avg_temp', 'bla', 'omg']
+
+  _disconnectRequest = false
 
   connectionStatus = ref(ConnectionStatus.DISCONNECTED);
 
   measurements = ref<Measurement[]>([]);
 
-  requestSerialPort = async (): Promise<any> => {
-    const nav = navigator as any;
-    if (!('serial' in nav)) {
-      throw new Error('Web serial not supported');
-    }
+  requestSerialPort = async (): Promise<any> => getSerial().requestPort();
 
-    // const filters = [
-    //   { usbVendorId: 0x6056, usbProductId: 0x0001 },
-    // ];
+  async connect(port: any, interval = 0, receiveTimeout = 1): Promise<void> {
+    this._disconnectRequest = false;
 
-    return nav.serial.requestPort();
-  };
-
-  async consumeMeasurements(port: any, interval = 10, receiveTimeout = 1): Promise<void> {
     const getMeasurements = async () => {
       const writer = port.writable.getWriter();
       const reader = port.readable.getReader();
-      const lastGetValuesTime = 0;
 
       const getValues = async () => {
         const getValue = async () => {
@@ -49,7 +50,7 @@ class Serial {
 
           const read = async (): Promise<Uint8Array> => {
             const cancelTimeout = setTimeout(() => {
-              reader.cancel();
+              reader.cancel().catch(nullFn);
             }, receiveTimeout * 1e3);
 
             let buffer = new Uint8Array([]);
@@ -87,7 +88,12 @@ class Serial {
           await asyncSetTimeout(sleepTime);
         }
 
-        await getValues();
+        if (!this._disconnectRequest) {
+          await getValues();
+        } else {
+          writer.releaseLock();
+          reader.releaseLock();
+        }
       };
 
       await getValues();
@@ -104,6 +110,11 @@ class Serial {
     } finally {
       this.connectionStatus.value = ConnectionStatus.DISCONNECTED;
     }
+    port.close();
+  }
+
+  disconnect() {
+    this._disconnectRequest = true;
   }
 }
 
