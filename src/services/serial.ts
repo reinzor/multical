@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { bufferAppend, getSubBuffer } from '../util/buffer';
 import nullFn from '../util/null-fn';
 import Kamstrup402Serializer from './serializers/kamstrup-402-serializer';
@@ -37,6 +37,8 @@ class Serial {
   connectionStatus = ref(ConnectionStatus.DISCONNECTED);
 
   measurements = ref<Measurement[]>([]);
+
+  lastMeasurement = computed(() => this.measurements.value[this.measurements.value.length - 1])
 
   get commandNames() {
     return this._serializer.commands.map((c) => c.name);
@@ -88,8 +90,12 @@ class Serial {
           date: new Date(),
           values: {},
         };
+
         // eslint-disable-next-line no-restricted-syntax
         for (const command of this._serializer.commands) {
+          if (this._disconnectRequest) {
+            break;
+          }
           try {
             // eslint-disable-next-line no-await-in-loop
             measurement.values[command.name] = await getValue(command);
@@ -97,14 +103,15 @@ class Serial {
             throw new Error(`Failed to fetch value ${command.name}: ${e}`);
           }
         }
-        this.measurements.value.push(measurement);
-
-        const sleepTime = interval * 1e3 - (new Date().getTime() - measurement.date.getTime());
-        if (sleepTime > 0) {
-          await asyncSetTimeout(sleepTime);
-        }
 
         if (!this._disconnectRequest) {
+          this.measurements.value.push(measurement);
+
+          const sleepTime = interval * 1e3 - (new Date().getTime() - measurement.date.getTime());
+          if (sleepTime > 0) {
+            await asyncSetTimeout(sleepTime);
+          }
+
           await getValues();
         } else {
           writer.releaseLock();
