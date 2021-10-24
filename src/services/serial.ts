@@ -1,10 +1,16 @@
 import { ref } from 'vue';
 import { bufferAppend, getSubBuffer } from '../util/buffer';
-import hexStringFromByteArray from '../util/hex';
 import nullFn from '../util/null-fn';
+import Kamstrup402Serializer from './serializers/kamstrup-402-serializer';
+import { Command, Serializer, Value } from './serializers/serializer';
+
+export interface NameValueMap {
+  [name: string]: Value;
+}
 
 interface Measurement {
-  bla: number;
+  date: Date;
+  values: NameValueMap;
 }
 
 enum ConnectionStatus {
@@ -24,17 +30,21 @@ const getSerial = (): any => {
 };
 
 class Serial {
-  _commands = ['avg_temp', 'bla', 'omg']
+  _serializer = new Kamstrup402Serializer() as Serializer;
 
-  _disconnectRequest = false
+  _disconnectRequest = false;
 
   connectionStatus = ref(ConnectionStatus.DISCONNECTED);
 
   measurements = ref<Measurement[]>([]);
 
+  get commandNames() {
+    return this._serializer.commands.map((c) => c.name);
+  }
+
   requestSerialPort = async (): Promise<any> => getSerial().requestPort();
 
-  async connect(port: any, interval = 0, receiveTimeout = 1): Promise<void> {
+  async connect(port: any, interval = 1, receiveTimeout = 1): Promise<void> {
     this._disconnectRequest = false;
 
     const getMeasurements = async () => {
@@ -42,10 +52,9 @@ class Serial {
       const reader = port.readable.getReader();
 
       const getValues = async () => {
-        const getValue = async () => {
+        const getValue = async (command: Command): Promise<Value> => {
           const write = async () => {
-            const data = new Uint8Array([0x80, 0x3f, 0x10, 0x01, 0x00, 0x3c, 0xb2, 0x5f, 0x0d]);
-            await writer.write(data);
+            await writer.write(command.data);
           };
 
           const read = async (): Promise<Uint8Array> => {
@@ -54,7 +63,7 @@ class Serial {
             }, receiveTimeout * 1e3);
 
             let buffer = new Uint8Array([]);
-            for (;;) {
+            for (; ;) {
               // eslint-disable-next-line no-await-in-loop
               const result = await reader.read();
 
@@ -72,18 +81,25 @@ class Serial {
           };
 
           await write();
-          console.log(hexStringFromByteArray(await read()));
+          return this._serializer.deserialize(await read());
         };
 
-        const time = new Date().getTime();
+        const measurement: Measurement = {
+          date: new Date(),
+          values: {},
+        };
         // eslint-disable-next-line no-restricted-syntax
-        for (const command of this._commands) {
-          // TODO, fetch command here ..
-          // eslint-disable-next-line no-await-in-loop
-          await getValue();
+        for (const command of this._serializer.commands) {
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            measurement.values[command.name] = await getValue(command);
+          } catch (e) {
+            throw new Error(`Failed to fetch value ${command.name}: ${e}`);
+          }
         }
+        this.measurements.value.push(measurement);
 
-        const sleepTime = interval * 1e3 - (new Date().getTime() - time);
+        const sleepTime = interval * 1e3 - (new Date().getTime() - measurement.date.getTime());
         if (sleepTime > 0) {
           await asyncSetTimeout(sleepTime);
         }

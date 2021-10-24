@@ -1,16 +1,20 @@
 <template>
   <div id="nav">
-    <router-link to="/">Home</router-link> |
+    <router-link to="/">Home</router-link>
+    |
     <router-link to="/about">About</router-link>
     {{ connectionStatus }}
   </div>
   <button @click="connect">Connect</button>
   <button @click="disconnect">Disconnect</button>
+  <pre>
+    {{ measurements }}
+  </pre>
   <router-view/>
 </template>
 
 <script>
-import { defineComponent, onMounted } from 'vue';
+import { defineComponent } from 'vue';
 import serial from '@/services/serial';
 
 export default defineComponent({
@@ -34,6 +38,7 @@ export default defineComponent({
       connect,
       disconnect,
       connectionStatus: serial.connectionStatus,
+      measurements: serial.measurements,
     };
   },
 });
