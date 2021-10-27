@@ -1,9 +1,11 @@
 <template>
   <el-row id="nav">
     <el-col :span="12">
-      <button @click="connect">Connect</button>
-      <button @click="disconnect">Disconnect</button>
-      {{ connectionStatus }}
+      <el-button v-if="connectionStatus === ConnectionStatus.CONNECTED" @click="disconnect">Disconnect</el-button>
+      <el-button v-else :loading="connectionStatus === ConnectionStatus.CONNECTING" @click="connect">
+        <span v-if="connectionStatus === ConnectionStatus.DISCONNECTED">Connect</span>
+        <span v-else>Connecting</span>
+      </el-button>
     </el-col>
     <el-col :span="12">
       <el-menu default-active="/" mode="horizontal" router>
@@ -16,7 +18,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import serial from '@/services/serial';
+import { ElNotification } from 'element-plus';
+
+import serial, { ConnectionStatus } from '@/services/serial';
 
 export default defineComponent({
   setup() {
@@ -26,16 +30,21 @@ export default defineComponent({
         try {
           await serial.connect(port);
         } catch (e) {
-          console.error(`consume measurements interrupted: ${e}`);
+          ElNotification.error({
+            title: 'Connection error',
+            message: e.message,
+            position: 'bottom-right',
+          });
         }
       } catch (e) {
-        console.error(`failed to request serial port: ${e}`);
+        // User cancelled
       }
     };
 
     const disconnect = () => serial.disconnect();
 
     return {
+      ConnectionStatus,
       connect,
       disconnect,
       connectionStatus: serial.connectionStatus,

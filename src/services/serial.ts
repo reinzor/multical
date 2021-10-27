@@ -4,16 +4,16 @@ import nullFn from '../util/null-fn';
 import Kamstrup402Serializer from './serializers/kamstrup-402-serializer';
 import { Command, Serializer, Value } from './serializers/serializer';
 
-export interface NameValueMap {
+interface NameValueMap {
   [name: string]: Value;
 }
 
-interface Measurement {
+export interface Measurement {
   date: Date;
   values: NameValueMap;
 }
 
-enum ConnectionStatus {
+export enum ConnectionStatus {
   DISCONNECTED = 'DISCONNECTED',
   CONNECTING = 'CONNECTING',
   CONNECTED = 'CONNECTED',
