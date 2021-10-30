@@ -1,15 +1,23 @@
 <template>
   <navbar />
-  <router-view />
+  <div class="page-content" :style="{opacity}">
+    <router-view />
+  </div>
 </template>
 
 <script>
-import { defineComponent } from 'vue';
+import { computed, defineComponent } from 'vue';
 
 import Navbar from '@/components/Navbar.vue';
+import serial, { ConnectionStatus } from '@/services/serial';
 
 export default defineComponent({
   components: { Navbar },
+  setup() {
+    return {
+      opacity: computed(() => (serial.connectionStatus.value === ConnectionStatus.CONNECTED ? 1.0 : 0.5)),
+    };
+  },
 });
 </script>
 
@@ -19,5 +27,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
+}
+
+.page-content {
+  margin: 65px auto auto auto;
+  max-width: 1376px;
 }
 </style>

@@ -14,6 +14,7 @@ export interface Measurement {
 }
 
 export enum ConnectionStatus {
+  DISCONNECTING = 'DISCONNECTING',
   DISCONNECTED = 'DISCONNECTED',
   CONNECTING = 'CONNECTING',
   CONNECTED = 'CONNECTED',
@@ -34,7 +35,7 @@ class Serial {
 
   _disconnectRequest = false;
 
-  connectionStatus = ref(ConnectionStatus.DISCONNECTED);
+  connectionStatus = ref<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
 
   measurements = ref<Measurement[]>([]);
 
@@ -44,7 +45,7 @@ class Serial {
     return this._serializer.commands.map((c) => c.name);
   }
 
-  requestSerialPort = async (): Promise<any> => getSerial().requestPort();
+  requestSerialPort = async (): Promise<any> => getSerial().requestPort({ filters: [{ usbVendorId: 6056 }] });
 
   async connect(port: any, interval = 1, receiveTimeout = 1): Promise<void> {
     this._disconnectRequest = false;
@@ -137,6 +138,7 @@ class Serial {
   }
 
   disconnect() {
+    this.connectionStatus.value = ConnectionStatus.DISCONNECTING;
     this._disconnectRequest = true;
   }
 }

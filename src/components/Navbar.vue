@@ -1,19 +1,21 @@
 <template>
-  <el-row id="nav">
-    <el-col :span="12">
-      <el-button v-if="connectionStatus === ConnectionStatus.CONNECTED" @click="disconnect">Disconnect</el-button>
-      <el-button v-else :loading="connectionStatus === ConnectionStatus.CONNECTING" @click="connect">
-        <span v-if="connectionStatus === ConnectionStatus.DISCONNECTED">Connect</span>
-        <span v-else>Connecting</span>
-      </el-button>
-    </el-col>
-    <el-col :span="12">
-      <el-menu default-active="/" mode="horizontal" router>
-        <el-menu-item index="/">Last</el-menu-item>
-        <el-menu-item index="history">History</el-menu-item>
-      </el-menu>
-    </el-col>
-  </el-row>
+  <header class="navbar">
+    <div class="navbar-wrapper">
+      <div class="container">
+        <div>
+          <el-button v-if="connectionStatus === ConnectionStatus.CONNECTED" @click="disconnect">Disconnect</el-button>
+          <el-button v-else-if="connectionStatus === ConnectionStatus.DISCONNECTED" @click="connect">Connect</el-button>
+          <el-button v-else loading>{{ $filters.words(connectionStatus) }}</el-button>
+        </div>
+        <div>
+          <el-menu default-active="/" mode="horizontal" router :ellipsis="false">
+            <el-menu-item index="/">Last</el-menu-item>
+            <el-menu-item index="history">History</el-menu-item>
+          </el-menu>
+        </div>
+      </div>
+    </div>
+  </header>
 </template>
 
 <script lang="ts">
@@ -55,13 +57,33 @@ export default defineComponent({
 </script>
 
 <style scoped>
-#nav {
-  border-bottom: solid 1px #e6e6e6;
-  display: flex;
-  align-items: center;
+.navbar {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  background-color: white;
 }
 
-#nav .el-menu--horizontal {
-  border: none !important;
+.navbar-wrapper {
+  padding: 0 32px;
+  position: relative;
+  border-bottom: 1px solid #dcdfe6;
+  height: 60px;
+  top: 0;
+}
+
+.navbar-wrapper .container {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1376px;
+}
+
+.navbar-wrapper .container div {
+  display: flex;
+  align-items: center;
+  height: 60px;
 }
 </style>

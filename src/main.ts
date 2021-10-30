@@ -7,9 +7,14 @@ import 'element-plus/dist/index.css';
 import App from './App.vue';
 import './registerServiceWorker';
 import router from './router';
+import Filters from './helpers/filters';
 
-createApp(App)
+const app = createApp(App)
   .use(router)
   .use(VueApexCharts)
-  .use(ElementPlus)
-  .mount('#app');
+  .use(ElementPlus);
+
+// Register global properties
+app.config.globalProperties.$filters = Filters;
+
+app.mount('#app');
